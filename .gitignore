@@ -1,0 +1,56 @@
+# ===========================================
+# OTP Streamlit - FIFA Tools
+# .gitignore
+# ===========================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# --- IDE ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-*
+
+# --- Variables de entorno (IMPORTANTE: nunca subir) ---
+.env
+.env.local
+.env.production
+
+# --- Datos locales ---
+datos_usuarios/
+logs/
+*.log
+
+# --- Archivos de permisos (contiene emails) ---
+permisos_usuarios.json
+
+# --- Cache ---
+.cache/
+.EasyOCR/
+*.cache
+
+# --- Archivos temporales ---
+*.tmp
+*.temp
+*.bak
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Carpeta dist (opcional, para desarrollo) ---
+# dist/
+
+# --- Docker local ---
+docker/.env

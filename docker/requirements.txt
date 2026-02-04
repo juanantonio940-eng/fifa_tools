@@ -1,0 +1,24 @@
+# OTP Streamlit - FIFA Tools
+# Dependencias para Docker
+
+# Framework web
+streamlit>=1.28.0
+
+# HTTP requests
+requests>=2.31.0
+
+# Variables de entorno
+python-dotenv>=1.0.0
+
+# Data processing
+pandas>=2.0.0
+openpyxl>=3.1.0
+
+# OCR
+easyocr>=1.7.0
+
+# Claude Vision (Anthropic)
+anthropic>=0.18.0
+
+# Procesamiento de imágenes (para Anytickets)
+Pillow>=10.0.0

@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  otp-streamlit:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: otp-streamlit-app
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      # Clerk Authentication
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - SKIP_AUTH=${SKIP_AUTH:-false}
+      # Anytickets API
+      - ANYTICKETS_BEARER_TOKEN=${ANYTICKETS_BEARER_TOKEN}
+      - ANYTICKETS_DEV_TOKEN=${ANYTICKETS_DEV_TOKEN}
+      # Anthropic (Claude Vision)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      # Persistir datos de usuarios y permisos
+      - otp_data:/app/datos_usuarios
+      - otp_logs:/app/logs
+      # Archivo de permisos (opcional, para persistencia)
+      - ./permisos_usuarios.json:/app/permisos_usuarios.json
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  otp_data:
+  otp_logs:
