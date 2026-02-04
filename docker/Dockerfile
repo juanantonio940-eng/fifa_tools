@@ -11,8 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsm6 \
     libxext6 \
     libxrender-dev \
-    libgomp1 \
-    curl \
+libgomp1 \    curl \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
