@@ -4,15 +4,17 @@ FROM python:3.11-slim
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Instalar dependencias del sistema necesarias para easyocr y PIL
-RUN apt-get update && apt-get install -y \
+# Instalar dependencias del sistema necesarias para easyocr, PIL y health check
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-glx \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 # Copiar requirements primero (para cache de Docker)
 COPY docker/requirements.txt .
