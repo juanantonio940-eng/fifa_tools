@@ -298,11 +298,8 @@ def render():
     with col_btn1:
         do_search = st.button(f"🔍 {t('btn_search')}", type="primary", use_container_width=True)
     with col_btn2:
-        do_clear = st.button(f"🧹 {t('btn_clear')}", use_container_width=True)
-
-    if do_clear:
-        st.session_state.cbd_search_val = ""
-        st.rerun()
+        st.button(f"🧹 {t('btn_clear')}", use_container_width=True,
+                  on_click=lambda: st.session_state.update({"cbd_search_val": ""}))
 
     # Ejecutar busqueda (siempre al cargar o al pulsar buscar)
     try:
