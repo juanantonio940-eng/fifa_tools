@@ -431,7 +431,7 @@ class ImapManager:
             # Buscar
             status, data = imap.search(None, search_criteria)
 
-            if status != "OK":
+            if status != "OK" or not data or not data[0]:
                 return results
 
             email_ids = data[0].split()
