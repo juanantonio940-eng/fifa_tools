@@ -24,7 +24,7 @@ ADMIN_PASSWORD = "74674764Cc$"
 PERMISOS_FILE = Path(__file__).parent / 'permisos_usuarios.json'
 
 # Opciones disponibles
-TODAS_LAS_OPCIONES = ["🔑 FIFA OTP", "🔑 UEFA OTP", "📋 Mundial Comprobantes", "📤 Comprobantes Anytickets"]
+TODAS_LAS_OPCIONES = ["🔑 FIFA OTP", "🔑 UEFA OTP", "📋 Mundial Comprobantes", "📤 Comprobantes Anytickets", "📧 Lectura Correos"]
 
 st.set_page_config(
     page_title="FIFA Tools",
@@ -90,7 +90,7 @@ if "edit_email_target" not in st.session_state:
 # Si hay un email para editar, limpiar las keys de los widgets para forzar reinicio
 if st.session_state.edit_email_target:
     # Eliminar keys de widgets para que se reinicialicen con nuevos valores
-    keys_to_clear = ["nuevo_usuario_email", "check_fifa", "check_uefa", "check_mundial", "check_anytickets"]
+    keys_to_clear = ["nuevo_usuario_email", "check_fifa", "check_uefa", "check_mundial", "check_anytickets", "check_lectura"]
     for key in keys_to_clear:
         if key in st.session_state:
             del st.session_state[key]
@@ -258,6 +258,11 @@ if st.session_state.show_config:
                 value="📤 Comprobantes Anytickets" in permisos_actuales if permisos_actuales else True,
                 key="check_anytickets"
             )
+            lectura = st.checkbox(
+                "📧 Lectura Correos",
+                value="📧 Lectura Correos" in permisos_actuales if permisos_actuales else True,
+                key="check_lectura"
+            )
 
         col1, col2, col3 = st.columns([1, 1, 2])
         with col1:
@@ -272,6 +277,8 @@ if st.session_state.show_config:
                         opciones_seleccionadas.append("📋 Mundial Comprobantes")
                     if anytickets:
                         opciones_seleccionadas.append("📤 Comprobantes Anytickets")
+                    if lectura:
+                        opciones_seleccionadas.append("📧 Lectura Correos")
 
                     permisos[nuevo_email] = {
                         'opciones': opciones_seleccionadas
@@ -338,6 +345,7 @@ if st.session_state.show_config:
             - 🔑 **UEFA OTP:** Consulta de códigos OTP de UEFA
             - 📋 **Mundial Comprobantes:** Verificación de comprobantes del Mundial
             - 📤 **Comprobantes Anytickets:** Subir comprobantes a Anytickets
+            - 📧 **Lectura Correos:** Lectura de correos IMAP con filtros
             """)
 
 # === CONTENIDO SEGÚN PÁGINA ===
@@ -360,6 +368,11 @@ elif pagina == "📤 Comprobantes Anytickets":
     # Importar y ejecutar página Anytickets
     from modules import anytickets_page
     anytickets_page.render()
+
+elif pagina == "📧 Lectura Correos":
+    # Importar y ejecutar página Lectura Correos
+    from modules import lectura_correos_page
+    lectura_correos_page.render()
 
 elif pagina is None and not st.session_state.show_config:
     # Usuario sin permisos
