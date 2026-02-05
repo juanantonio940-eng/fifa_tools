@@ -12,6 +12,7 @@ import os
 import json
 from pathlib import Path
 from dotenv import load_dotenv
+import psycopg2
 
 # Cargar variables de entorno
 env_path = Path(__file__).parent / '.env'
@@ -21,7 +22,7 @@ if env_path.exists():
 # Configuración
 SKIP_AUTH = os.getenv('SKIP_AUTH', 'false').lower() == 'true'
 ADMIN_PASSWORD = "74674764Cc$"
-PERMISOS_FILE = Path(__file__).parent / 'permisos_usuarios.json'
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 # Opciones disponibles
 TODAS_LAS_OPCIONES = ["🔑 FIFA OTP", "🔑 UEFA OTP", "📋 Mundial Comprobantes", "📤 Comprobantes Anytickets", "📧 Lectura Correos", "🗄️ Control BD"]
@@ -32,33 +33,75 @@ st.set_page_config(
     layout="wide"
 )
 
-# === FUNCIONES DE PERMISOS ===
+# === CONEXION BD PERMISOS ===
+def _get_permisos_conn():
+    """Obtiene conexion a Supabase para permisos."""
+    if not DATABASE_URL:
+        return None
+    try:
+        if "permisos_conn" not in st.session_state or st.session_state.permisos_conn is None or st.session_state.permisos_conn.closed:
+            conn = psycopg2.connect(DATABASE_URL)
+            conn.autocommit = True
+            st.session_state.permisos_conn = conn
+        return st.session_state.permisos_conn
+    except Exception:
+        return None
+
+
+# === FUNCIONES DE PERMISOS (Supabase) ===
 def cargar_permisos():
-    """Carga los permisos de usuarios desde el archivo JSON"""
-    if PERMISOS_FILE.exists():
-        try:
-            with open(PERMISOS_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            return {}
-    return {}
+    """Carga los permisos de usuarios desde Supabase."""
+    conn = _get_permisos_conn()
+    if not conn:
+        return {}
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT email, opciones FROM app_permisos")
+        rows = cur.fetchall()
+        cur.close()
+        return {row[0]: {"opciones": row[1]} for row in rows}
+    except Exception:
+        return {}
 
 
 def guardar_permisos(permisos):
-    """Guarda los permisos de usuarios en el archivo JSON"""
-    with open(PERMISOS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(permisos, f, ensure_ascii=False, indent=2)
+    """Guarda todos los permisos en Supabase (sync completo)."""
+    conn = _get_permisos_conn()
+    if not conn:
+        return
+    try:
+        cur = conn.cursor()
+        # Obtener emails actuales en BD
+        cur.execute("SELECT email FROM app_permisos")
+        emails_bd = {row[0] for row in cur.fetchall()}
+
+        emails_nuevos = set(permisos.keys())
+
+        # Eliminar los que ya no estan
+        for email in emails_bd - emails_nuevos:
+            cur.execute("DELETE FROM app_permisos WHERE email = %s", (email,))
+
+        # Insertar o actualizar
+        for email, datos in permisos.items():
+            opciones = json.dumps(datos.get("opciones", []))
+            cur.execute(
+                "INSERT INTO app_permisos (email, opciones) VALUES (%s, %s::jsonb) "
+                "ON CONFLICT (email) DO UPDATE SET opciones = %s::jsonb",
+                (email, opciones, opciones),
+            )
+        cur.close()
+    except Exception as e:
+        st.error(f"Error guardando permisos: {e}")
 
 
 def obtener_permisos_usuario(email):
-    """Obtiene los permisos de un usuario específico"""
+    """Obtiene los permisos de un usuario específico."""
     if not email:
-        return TODAS_LAS_OPCIONES  # Sin auth, todas las opciones
+        return TODAS_LAS_OPCIONES
 
     permisos = cargar_permisos()
     email_lower = email.lower().strip()
 
-    # Si el usuario no está en la lista, tiene todas las opciones por defecto
     if email_lower not in permisos:
         return TODAS_LAS_OPCIONES
 
