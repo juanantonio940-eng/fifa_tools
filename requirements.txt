@@ -6,3 +6,4 @@ anthropic
 easyocr
 openpyxl
 Pillow
+psycopg2-binary

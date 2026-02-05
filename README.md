@@ -6,11 +6,13 @@ Aplicación web Streamlit para consulta de códigos OTP y verificación de compr
 
 ## Descripción
 
-Esta aplicación proporciona cuatro herramientas principales:
+Esta aplicación proporciona seis herramientas principales:
 1. **FIFA OTP** - Consulta de códigos OTP de FIFA desde correos de iCloud
 2. **UEFA OTP** - Consulta de códigos OTP de UEFA desde correos de iCloud
 3. **Mundial Comprobantes** - Verificación de comprobantes de tickets del Mundial FIFA 2026
 4. **Comprobantes Anytickets** - Subir comprobantes de transferencia a Anytickets
+5. **Lectura Correos** - Lectura y filtrado de correos IMAP
+6. **Control BD** - Gestión de la tabla icloud_accounts en Supabase (buscar, editar, insertar, eliminar)
 
 ## Despliegue en Producción (EasyPanel)
 
@@ -40,6 +42,7 @@ SKIP_AUTH=false
 ANTHROPIC_API_KEY=sk-ant-xxx
 ANYTICKETS_BEARER_TOKEN=xxx
 ANYTICKETS_DEV_TOKEN=xxx
+DATABASE_URL=postgresql://user:pass@db.xxx.supabase.co:5432/postgres?sslmode=require
 ```
 > **Nota:** Las claves reales están en el archivo `.env` local (no subido a GitHub)
 
@@ -65,7 +68,9 @@ fifa_tools/
 │   ├── uefa_otp_page.py        # Módulo UEFA OTP
 │   ├── comprobantes_page.py    # Módulo Mundial Comprobantes
 │   ├── anytickets_page.py      # Módulo Comprobantes Anytickets
-│   └── anytickets_client.py    # Cliente API Anytickets
+│   ├── anytickets_client.py    # Cliente API Anytickets
+│   ├── lectura_correos_page.py # Módulo Lectura Correos
+│   └── controlbd_page.py       # Módulo Control BD icloud_accounts
 │
 ├── docker/
 │   ├── Dockerfile              # Imagen Docker (python:3.11-slim)
@@ -158,6 +163,8 @@ POST /webhook
 - `🔑 UEFA OTP` - Consulta OTP de UEFA
 - `📋 Mundial Comprobantes` - Verificación de comprobantes
 - `📤 Comprobantes Anytickets` - Subir comprobantes a Anytickets
+- `📧 Lectura Correos` - Lectura de correos IMAP
+- `🗄️ Control BD` - Gestión de icloud_accounts en Supabase
 
 ---
 
@@ -231,6 +238,37 @@ Obtener en: https://console.anthropic.com/
 
 ---
 
+## Control BD (icloud_accounts)
+
+### Descripción
+Herramienta para gestionar la tabla `icloud_accounts` en Supabase PostgreSQL. Permite buscar, editar, insertar y eliminar registros directamente desde la interfaz web.
+
+### Campos de la tabla
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id` | bigint (PK) | ID autoincremental |
+| `MAIL_MADRE` | text | Email madre de iCloud |
+| `ALIAS` | text | Alias de la cuenta |
+| `PASSWORD` | text | Contraseña de aplicación |
+| `PAQUETE` | text | Paquete al que pertenece |
+| `created_at` | timestamptz | Fecha de creación |
+
+### Funcionalidades
+- **Buscar:** Por cualquier campo (ALIAS, MAIL_MADRE, PASSWORD, PAQUETE, id) con búsqueda parcial (ILIKE) o exacta
+- **Editar:** Seleccionar fila y modificar campos editables (MAIL_MADRE, ALIAS, PASSWORD, PAQUETE)
+- **Insertar:** Agregar nuevas filas con formulario
+- **Eliminar:** Con confirmación antes de borrar
+- **Limite configurable:** Por defecto 500 filas, ajustable hasta 10.000
+
+### Configuración
+| Variable | Descripción |
+|----------|-------------|
+| `DATABASE_URL` | URL de conexión PostgreSQL a Supabase |
+
+Formato: `postgresql://user:password@db.xxx.supabase.co:5432/postgres?sslmode=require`
+
+---
+
 ## Instalación Local
 
 ### Opción 1: Python directo
@@ -292,12 +330,22 @@ docker-compose up -d
 | python-dotenv | Variables de entorno |
 | openpyxl | Exportar Excel |
 | Pillow | Procesamiento de imágenes |
+| psycopg2-binary | Conexión PostgreSQL (Control BD) |
 
 ---
 
 ## Historial de Cambios
 
-### v3.4 (Última actualización - Febrero 2026)
+### v3.5 (Última actualización - Febrero 2026)
+- ✅ Agregado módulo **Control BD** (`modules/controlbd_page.py`)
+- ✅ Gestión completa de tabla `icloud_accounts` en Supabase
+- ✅ Buscar, editar, insertar y eliminar registros desde la interfaz
+- ✅ Soporte multiidioma (ES, EN, HI)
+- ✅ Integrado en sistema de permisos
+- ✅ Añadida dependencia `psycopg2-binary`
+- ✅ Añadida variable `DATABASE_URL` para conexión PostgreSQL
+
+### v3.4
 - ✅ **Desplegado en producción** en EasyPanel
 - ✅ Repositorio GitHub: `juanantonio940-eng/fifa_tools`
 - ✅ Corregido Dockerfile: `libgl1` en lugar de `libgl1-mesa-glx`

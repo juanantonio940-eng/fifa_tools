@@ -22,3 +22,6 @@ anthropic>=0.18.0
 
 # Procesamiento de imágenes (para Anytickets)
 Pillow>=10.0.0
+
+# PostgreSQL (Control BD icloud_accounts)
+psycopg2-binary>=2.9.0
