@@ -43,6 +43,18 @@ TRANSLATIONS = {
         "no_connection": "No se pudo conectar a la base de datos. Configura DATABASE_URL en las variables de entorno.",
         "fill_one": "Rellena al menos un campo",
         "connected": "Conectado a Supabase",
+        "bulk_title": "Edicion masiva",
+        "bulk_where_field": "Campo a buscar (WHERE)",
+        "bulk_where_value": "Valor a buscar",
+        "bulk_set_field": "Campo a modificar",
+        "bulk_set_value": "Nuevo valor",
+        "bulk_preview": "Vista previa",
+        "bulk_affected": "filas afectadas",
+        "bulk_execute": "Ejecutar actualizacion masiva",
+        "bulk_confirm": "Estas seguro? Se actualizaran {n} filas.",
+        "bulk_done": "{n} filas actualizadas correctamente",
+        "bulk_fill": "Rellena todos los campos",
+        "bulk_no_rows": "No se encontraron filas con ese criterio",
     },
     "en": {
         "title": "DB Control - icloud_accounts",
@@ -71,6 +83,18 @@ TRANSLATIONS = {
         "no_connection": "Could not connect to database. Set DATABASE_URL in environment variables.",
         "fill_one": "Fill at least one field",
         "connected": "Connected to Supabase",
+        "bulk_title": "Bulk edit",
+        "bulk_where_field": "Match field (WHERE)",
+        "bulk_where_value": "Value to match",
+        "bulk_set_field": "Field to update",
+        "bulk_set_value": "New value",
+        "bulk_preview": "Preview",
+        "bulk_affected": "rows affected",
+        "bulk_execute": "Execute bulk update",
+        "bulk_confirm": "Are you sure? {n} rows will be updated.",
+        "bulk_done": "{n} rows updated successfully",
+        "bulk_fill": "Fill all fields",
+        "bulk_no_rows": "No rows found matching that criteria",
     },
     "hi": {
         "title": "DB Control - icloud_accounts",
@@ -99,6 +123,18 @@ TRANSLATIONS = {
         "no_connection": "डेटाबेस से कनेक्ट नहीं हो सका। DATABASE_URL सेट करें।",
         "fill_one": "कम से कम एक फ़ील्ड भरें",
         "connected": "Supabase से जुड़ा",
+        "bulk_title": "सामूहिक संपादन",
+        "bulk_where_field": "खोज फ़ील्ड (WHERE)",
+        "bulk_where_value": "खोज मान",
+        "bulk_set_field": "अपडेट फ़ील्ड",
+        "bulk_set_value": "नया मान",
+        "bulk_preview": "पूर्वावलोकन",
+        "bulk_affected": "प्रभावित पंक्तियाँ",
+        "bulk_execute": "सामूहिक अपडेट",
+        "bulk_confirm": "क्या आप सुनिश्चित हैं? {n} पंक्तियाँ अपडेट होंगी।",
+        "bulk_done": "{n} पंक्तियाँ सफलतापूर्वक अपडेट की गईं",
+        "bulk_fill": "सभी फ़ील्ड भरें",
+        "bulk_no_rows": "इस मापदंड से कोई पंक्ति नहीं मिली",
     },
 }
 
@@ -201,6 +237,30 @@ def delete_row(conn, row_id):
     cur.close()
 
 
+def bulk_count(conn, where_col, where_val):
+    """Cuenta cuantas filas coinciden con el criterio."""
+    cur = conn.cursor()
+    query = sql.SQL("SELECT count(*) FROM {} WHERE {} = %s").format(
+        sql.Identifier(TABLE), sql.Identifier(where_col)
+    )
+    cur.execute(query, (where_val,))
+    count = cur.fetchone()[0]
+    cur.close()
+    return count
+
+
+def bulk_update(conn, where_col, where_val, set_col, set_val):
+    """Actualiza set_col = set_val en todas las filas donde where_col = where_val."""
+    cur = conn.cursor()
+    query = sql.SQL("UPDATE {} SET {} = %s WHERE {} = %s").format(
+        sql.Identifier(TABLE), sql.Identifier(set_col), sql.Identifier(where_col)
+    )
+    cur.execute(query, (set_val, where_val))
+    affected = cur.rowcount
+    cur.close()
+    return affected
+
+
 def render():
     st.title(f"🗄️ {t('title')}")
 
@@ -275,8 +335,8 @@ def render():
 
     st.markdown("---")
 
-    # ── Acciones: Editar / Eliminar / Insertar ────────────────────────
-    tab_edit, tab_insert = st.tabs([f"✏️ {t('edit_title')}", f"➕ {t('insert_title')}"])
+    # ── Acciones: Editar / Masiva / Insertar ─────────────────────────
+    tab_edit, tab_bulk, tab_insert = st.tabs([f"✏️ {t('edit_title')}", f"🔄 {t('bulk_title')}", f"➕ {t('insert_title')}"])
 
     # ── Tab Editar ──
     with tab_edit:
@@ -336,6 +396,79 @@ def render():
                         st.rerun()
         else:
             st.info(t("edit_select"))
+
+    # ── Tab Edicion Masiva ──
+    with tab_bulk:
+        st.caption("Actualiza un campo en todas las filas que coincidan con un criterio. "
+                   "Ej: cambiar PASSWORD de todas las filas con un mismo MAIL_MADRE.")
+
+        col_w1, col_w2 = st.columns(2)
+        with col_w1:
+            bulk_where_col = st.selectbox(t("bulk_where_field"), SEARCHABLE, key="cbd_bulk_wcol")
+        with col_w2:
+            bulk_where_val = st.text_input(t("bulk_where_value"), key="cbd_bulk_wval")
+
+        col_s1, col_s2 = st.columns(2)
+        with col_s1:
+            bulk_set_col = st.selectbox(t("bulk_set_field"), EDITABLE, key="cbd_bulk_scol")
+        with col_s2:
+            bulk_set_val = st.text_input(t("bulk_set_value"), key="cbd_bulk_sval")
+
+        col_prev, col_exec, _ = st.columns([1, 1.5, 3.5])
+
+        with col_prev:
+            do_preview = st.button(f"🔍 {t('bulk_preview')}", use_container_width=True)
+
+        # Preview: contar filas afectadas
+        if do_preview and bulk_where_val:
+            try:
+                count = bulk_count(conn, bulk_where_col, bulk_where_val)
+                if count > 0:
+                    st.session_state.cbd_bulk_count = count
+                    st.info(f"**{count}** {t('bulk_affected')} ({bulk_where_col} = `{bulk_where_val}`)")
+                else:
+                    st.session_state.cbd_bulk_count = 0
+                    st.warning(t("bulk_no_rows"))
+            except Exception as e:
+                st.error(str(e))
+        elif do_preview:
+            st.warning(t("bulk_fill"))
+
+        with col_exec:
+            if st.button(f"⚡ {t('bulk_execute')}", type="primary", use_container_width=True):
+                if bulk_where_val and bulk_set_val:
+                    st.session_state.cbd_bulk_pending = True
+                else:
+                    st.warning(t("bulk_fill"))
+
+        # Confirmacion
+        if st.session_state.get("cbd_bulk_pending"):
+            try:
+                count = bulk_count(conn, bulk_where_col, bulk_where_val)
+            except Exception:
+                count = 0
+
+            if count == 0:
+                st.warning(t("bulk_no_rows"))
+                st.session_state.cbd_bulk_pending = False
+            else:
+                st.warning(t("bulk_confirm").format(n=count))
+                st.caption(f"`UPDATE {TABLE} SET {bulk_set_col} = '{bulk_set_val}' WHERE {bulk_where_col} = '{bulk_where_val}'`")
+
+                c1, c2, _ = st.columns([1, 1, 4])
+                with c1:
+                    if st.button("✅ Confirmar", type="primary", key="cbd_bulk_yes"):
+                        try:
+                            affected = bulk_update(conn, bulk_where_col, bulk_where_val, bulk_set_col, bulk_set_val)
+                            st.session_state.cbd_bulk_pending = False
+                            st.success(t("bulk_done").format(n=affected))
+                            st.rerun()
+                        except Exception as e:
+                            st.error(str(e))
+                with c2:
+                    if st.button("❌ Cancelar", key="cbd_bulk_no"):
+                        st.session_state.cbd_bulk_pending = False
+                        st.rerun()
 
     # ── Tab Insertar ──
     with tab_insert:
