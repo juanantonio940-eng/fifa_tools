@@ -2,6 +2,8 @@
 
 Aplicación web Streamlit para consulta de códigos OTP y verificación de comprobantes del Mundial FIFA 2026.
 
+**Repositorio:** https://github.com/juanantonio940-eng/fifa_tools
+
 ## Descripción
 
 Esta aplicación proporciona cuatro herramientas principales:
@@ -10,19 +12,52 @@ Esta aplicación proporciona cuatro herramientas principales:
 3. **Mundial Comprobantes** - Verificación de comprobantes de tickets del Mundial FIFA 2026
 4. **Comprobantes Anytickets** - Subir comprobantes de transferencia a Anytickets
 
+## Despliegue en Producción (EasyPanel)
+
+### Repositorio GitHub
+```
+https://github.com/juanantonio940-eng/fifa_tools.git
+```
+
+### Configuración en EasyPanel
+
+1. **Crear App desde GitHub:**
+   - Projects → Create App → GitHub
+   - Seleccionar repositorio `fifa_tools`
+   - Branch: `main`
+   - **Dockerfile Path:** `docker/Dockerfile`
+   - **Build Context:** `.`
+
+2. **Puerto:** `8501`
+
+3. **Variables de Entorno:**
+```env
+CLERK_PUBLISHABLE_KEY=pk_test_xxx
+CLERK_SECRET_KEY=sk_test_xxx
+CLERK_DOMAIN=xxx.accounts.dev
+USE_CLERK_AUTH=true
+SKIP_AUTH=false
+ANTHROPIC_API_KEY=sk-ant-xxx
+ANYTICKETS_BEARER_TOKEN=xxx
+ANYTICKETS_DEV_TOKEN=xxx
+```
+> **Nota:** Las claves reales están en el archivo `.env` local (no subido a GitHub)
+
+4. **Deploy** y listo.
+
+---
+
 ## Estructura del Proyecto
 
 ```
-Otp_streamlit/
+fifa_tools/
 ├── app.py                      # Aplicación principal con menú lateral
 ├── otp_consultor_web.py        # Versión standalone (FIFA + UEFA)
 ├── clerk_auth.py               # Autenticación con Clerk
 ├── permisos_usuarios.json      # Permisos de usuarios (se crea automáticamente)
-├── .env                        # Variables de entorno
 ├── .gitignore                  # Archivos ignorados por Git
 ├── .dockerignore               # Archivos ignorados por Docker
 ├── requirements.txt            # Dependencias
-├── iniciar_otp_consultor.bat   # Script para iniciar la app
 │
 ├── modules/
 │   ├── __init__.py
@@ -32,35 +67,20 @@ Otp_streamlit/
 │   ├── anytickets_page.py      # Módulo Comprobantes Anytickets
 │   └── anytickets_client.py    # Cliente API Anytickets
 │
-├── docker/                     # Configuración Docker para EasyPanel
-│   ├── Dockerfile              # Imagen Docker
-│   ├── docker-compose.yml      # Compose para desarrollo
+├── docker/
+│   ├── Dockerfile              # Imagen Docker (python:3.11-slim)
+│   ├── docker-compose.yml      # Compose para desarrollo local
 │   ├── requirements.txt        # Dependencias con versiones
 │   ├── .env.example            # Ejemplo de variables de entorno
-│   └── DEPLOY.md               # Instrucciones de despliegue
+│   └── DEPLOY.md               # Instrucciones detalladas
 │
-├── dist/                       # Carpeta de distribución (copia de producción)
-│   ├── app.py
-│   ├── clerk_auth.py
-│   └── modules/
-│       ├── __init__.py
-│       ├── otp_page.py
-│       ├── uefa_otp_page.py
-│       ├── comprobantes_page.py
-│       ├── anytickets_page.py
-│       └── anytickets_client.py
-│
-├── datos_usuarios/             # Datos por usuario (se crea automáticamente)
-│   └── <email_usuario>/
-│       ├── config.ini
-│       ├── cache_resultados.json
-│       ├── imagenes/
-│       ├── tabla/
-│       └── reportes/
-│
-└── logs/
-    └── security.log
+└── dist/                       # Carpeta de distribución local
+    ├── app.py
+    ├── clerk_auth.py
+    └── modules/
 ```
+
+---
 
 ## Webhooks Utilizados
 
@@ -108,6 +128,8 @@ POST /webhook
 }
 ```
 
+---
+
 ## Sistema de Permisos
 
 ### Acceso a Configuración
@@ -137,15 +159,22 @@ POST /webhook
 - `📋 Mundial Comprobantes` - Verificación de comprobantes
 - `📤 Comprobantes Anytickets` - Subir comprobantes a Anytickets
 
+---
+
 ## Autenticación
 
-La aplicación usa **Clerk** para autenticación. Configurar en `.env`:
+La aplicación usa **Clerk** para autenticación.
 
-```env
-CLERK_PUBLISHABLE_KEY=pk_...
-CLERK_SECRET_KEY=sk_...
-SKIP_AUTH=false  # true para desarrollo sin auth
-```
+| Variable | Descripción |
+|----------|-------------|
+| `CLERK_PUBLISHABLE_KEY` | Clave pública de Clerk |
+| `CLERK_SECRET_KEY` | Clave secreta de Clerk |
+| `CLERK_DOMAIN` | Dominio de Clerk |
+| `SKIP_AUTH` | `false` (cambiar a `true` para desactivar auth) |
+
+> Obtener claves en: https://dashboard.clerk.com/
+
+---
 
 ## Idiomas Soportados
 
@@ -153,7 +182,9 @@ SKIP_AUTH=false  # true para desarrollo sin auth
 - English (en)
 - हिन्दी - Hindi (hi)
 
-## Comprobantes Anytickets - Características
+---
+
+## Comprobantes Anytickets
 
 ### Funcionalidades
 - **Subida Individual:** Subir un comprobante especificando Invoice ID
@@ -161,17 +192,10 @@ SKIP_AUTH=false  # true para desarrollo sin auth
 - **Marketplaces:** Soporta `general` y `gotickets`
 
 ### Configuración API
-Los tokens de Anytickets se pueden configurar de dos formas:
-
-1. **Desde la interfaz (recomendado):** En la pestaña "Configuración" del módulo Anytickets
-   - Los tokens se guardan en `.env` automáticamente
-   - Botón "💾 Guardar Tokens" para persistir la configuración
-
-2. **Variables de entorno:** Editar directamente el archivo `.env`
-```env
-ANYTICKETS_BEARER_TOKEN=tu_bearer_token
-ANYTICKETS_DEV_TOKEN=tu_dev_token
-```
+| Variable | Descripción |
+|----------|-------------|
+| `ANYTICKETS_BEARER_TOKEN` | Token Bearer de autenticación |
+| `ANYTICKETS_DEV_TOKEN` | Token de desarrollo |
 
 ### API Endpoints
 - Base URL: `https://any-catchall.com/api/v1`
@@ -185,7 +209,7 @@ Los archivos deben tener nombre numérico que corresponde al Invoice ID:
 
 ---
 
-## Mundial Comprobantes - Características
+## Mundial Comprobantes
 
 ### Métodos de Extracción OCR
 1. **Solo OCR (Gratuito)** - Usa EasyOCR
@@ -193,9 +217,11 @@ Los archivos deben tener nombre numérico que corresponde al Invoice ID:
 3. **OCR + Fallback** - Intenta OCR primero, si falla usa Claude Vision
 
 ### Configuración API Anthropic
-Se requiere API key de Anthropic para usar Claude Vision:
-- Obtener en: https://console.anthropic.com/
-- Configurar en la pestaña "Configuración" de Mundial Comprobantes
+| Variable | Descripción |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | API key de Anthropic para Claude Vision |
+
+Obtener en: https://console.anthropic.com/
 
 ### Campos Extraídos
 - Email del destinatario
@@ -203,11 +229,17 @@ Se requiere API key de Anthropic para usar Claude Vision:
 - Cantidad de tickets
 - Categoría
 
-## Instalación
+---
 
-### Opción 1: Local
+## Instalación Local
+
+### Opción 1: Python directo
 
 ```bash
+# Clonar repositorio
+git clone https://github.com/juanantonio940-eng/fifa_tools.git
+cd fifa_tools
+
 # Crear entorno virtual
 python -m venv .venv
 
@@ -217,102 +249,86 @@ python -m venv .venv
 # Instalar dependencias
 pip install -r requirements.txt
 
+# Crear archivo .env con las variables
 # Ejecutar
 streamlit run app.py
 ```
 
-### Opción 2: Docker
+### Opción 2: Docker local
 
 ```bash
 # Construir imagen
-docker build -f docker/Dockerfile -t otp-streamlit .
+docker build -f docker/Dockerfile -t fifa-tools .
 
-# Ejecutar con variables de entorno
+# Ejecutar
 docker run -p 8501:8501 \
   -e CLERK_PUBLISHABLE_KEY=pk_xxx \
   -e CLERK_SECRET_KEY=sk_xxx \
   -e SKIP_AUTH=false \
-  otp-streamlit
+  fifa-tools
 ```
 
 ### Opción 3: Docker Compose
 
 ```bash
-# Copiar variables de entorno
 cp docker/.env.example docker/.env
 # Editar docker/.env con tus valores
 
-# Ejecutar
 cd docker
 docker-compose up -d
 ```
 
-### Opción 4: EasyPanel (Producción)
-
-Ver instrucciones detalladas en `docker/DEPLOY.md`
+---
 
 ## Dependencias Principales
 
-- streamlit
-- requests
-- pandas
-- anthropic (para Claude Vision)
-- easyocr (para OCR gratuito)
-- python-dotenv
-- openpyxl (para exportar Excel)
+| Paquete | Uso |
+|---------|-----|
+| streamlit | Framework web |
+| requests | HTTP requests |
+| pandas | Procesamiento de datos |
+| anthropic | Claude Vision API |
+| easyocr | OCR gratuito |
+| python-dotenv | Variables de entorno |
+| openpyxl | Exportar Excel |
+| Pillow | Procesamiento de imágenes |
 
-## Ejecución
-
-### Aplicación Principal (con menú lateral)
-```bash
-streamlit run app.py
-```
-
-### Versión Standalone (solo OTP)
-```bash
-streamlit run otp_consultor_web.py
-```
-
-### Con script batch (Windows)
-```bash
-iniciar_otp_consultor.bat
-```
+---
 
 ## Historial de Cambios
 
-### v3.3 (Última actualización)
-- ✅ Agregada carpeta `docker/` con configuración completa para **EasyPanel**
+### v3.4 (Última actualización - Febrero 2026)
+- ✅ **Desplegado en producción** en EasyPanel
+- ✅ Repositorio GitHub: `juanantonio940-eng/fifa_tools`
+- ✅ Corregido Dockerfile: `libgl1` en lugar de `libgl1-mesa-glx`
+- ✅ Añadido `curl` para health check en Docker
+- ✅ Documentación completa actualizada
+
+### v3.3
+- ✅ Agregada carpeta `docker/` con configuración completa para EasyPanel
 - ✅ Creado `Dockerfile` optimizado para Streamlit
 - ✅ Creado `docker-compose.yml` para desarrollo local
 - ✅ Creado `DEPLOY.md` con instrucciones detalladas de despliegue
 - ✅ Agregados `.gitignore` y `.dockerignore`
-- ✅ Agregado `.env.example` como referencia
 
 ### v3.2
-- ✅ Corregido: Botón **Editar** en usuarios ahora funciona correctamente (reset de widget keys)
-- ✅ Corregido: Lista de usuarios ahora muestra **todas las opciones** con su estado (✅/❌)
-- ✅ Actualizada carpeta `dist/` con todos los cambios
+- ✅ Corregido: Botón **Editar** en usuarios ahora funciona correctamente
+- ✅ Corregido: Lista de usuarios muestra **todas las opciones** con su estado (✅/❌)
 
 ### v3.1
-- ✅ Corregido: Checkbox de **Comprobantes Anytickets** ahora aparece en configuración de permisos
-- ✅ Corregido: Error `StreamlitAPIException` al editar usuarios (session_state key conflict)
-- ✅ Tokens de Anytickets configurables desde la interfaz con botón "Guardar Tokens"
-- ✅ Actualizada carpeta `dist/` con todos los cambios
+- ✅ Corregido: Checkbox de **Comprobantes Anytickets** en permisos
+- ✅ Corregido: Error `StreamlitAPIException` al editar usuarios
+- ✅ Tokens de Anytickets configurables desde la interfaz
 
 ### v3.0
 - ✅ Agregado módulo **Comprobantes Anytickets**
-- ✅ Creado `modules/anytickets_page.py` - Interfaz Streamlit
-- ✅ Creado `modules/anytickets_client.py` - Cliente API Anytickets
+- ✅ Creado `modules/anytickets_page.py` y `anytickets_client.py`
 - ✅ Soporte para subida individual y masiva
-- ✅ Actualizada carpeta `dist/` con todos los cambios
 
 ### v2.0
-- ✅ Agregada opción **UEFA OTP** al menú lateral
-- ✅ Creado módulo `modules/uefa_otp_page.py`
+- ✅ Agregada opción **UEFA OTP**
 - ✅ Implementado **sistema de permisos por usuario**
-- ✅ Agregada **página de configuración** protegida por contraseña
-- ✅ Actualizada versión standalone `otp_consultor_web.py` con selector FIFA/UEFA
-- ✅ Actualizada carpeta `dist/` con todos los cambios
+- ✅ Página de configuración protegida por contraseña
 
 ### v1.0 (Versión inicial)
 - FIFA OTP
@@ -320,18 +336,23 @@ iniciar_otp_consultor.bat
 - Autenticación Clerk
 - Soporte multiidioma
 
+---
+
 ## Notas para Desarrollo
 
 ### Agregar Nueva Opción al Menú
 1. Crear módulo en `modules/nueva_opcion_page.py` con función `render()`
 2. Agregar a `TODAS_LAS_OPCIONES` en `app.py`
 3. Agregar el `elif` correspondiente en la sección de contenido
-4. Copiar a `dist/modules/`
+4. Commit y push a GitHub → EasyPanel rebuilds automáticamente
 
-### Archivos a Sincronizar con dist/
-- `app.py`
-- `modules/*.py`
-- `clerk_auth.py`
+### Actualizar Producción
+```bash
+git add .
+git commit -m "Descripción del cambio"
+git push
+# EasyPanel detecta el cambio y hace rebuild automático
+```
 
 ---
 
