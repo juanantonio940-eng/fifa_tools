@@ -389,6 +389,7 @@ if st.session_state.show_config:
             2. **Usuarios configurados:** Solo ven las opciones que tengan marcadas.
             3. **Para restringir acceso:** Agrega el usuario y desmarca las opciones que NO debe ver.
             4. **Para dar acceso total:** Elimina el usuario de la lista (volverá al comportamiento por defecto).
+            5. **Persistencia:** Los permisos se guardan en Supabase (tabla `app_permisos`), no se pierden al reconstruir Docker.
 
             ### Opciones disponibles
             - 🔑 **FIFA OTP:** Consulta de códigos OTP de FIFA

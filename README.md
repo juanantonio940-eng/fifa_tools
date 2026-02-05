@@ -57,7 +57,7 @@ fifa_tools/
 ├── app.py                      # Aplicación principal con menú lateral
 ├── otp_consultor_web.py        # Versión standalone (FIFA + UEFA)
 ├── clerk_auth.py               # Autenticación con Clerk
-├── permisos_usuarios.json      # Permisos de usuarios (se crea automáticamente)
+├── permisos_usuarios.json      # (Legacy) Los permisos ahora se guardan en Supabase
 ├── .gitignore                  # Archivos ignorados por Git
 ├── .dockerignore               # Archivos ignorados por Docker
 ├── requirements.txt            # Dependencias
@@ -144,18 +144,20 @@ POST /webhook
 ### Funcionamiento
 1. **Usuarios NO configurados:** Tienen acceso a TODAS las opciones por defecto
 2. **Usuarios configurados:** Solo ven las opciones que tengan marcadas en su configuración
-3. **Archivo de permisos:** `permisos_usuarios.json`
+3. **Almacenamiento:** Tabla `app_permisos` en Supabase (persiste entre rebuilds de Docker)
 
-### Estructura del archivo de permisos
+### Tabla app_permisos (Supabase)
+```sql
+CREATE TABLE app_permisos (
+    email TEXT PRIMARY KEY,
+    opciones JSONB NOT NULL DEFAULT '[]'::jsonb
+);
+```
+
+Ejemplo de datos:
 ```json
-{
-  "usuario@ejemplo.com": {
-    "opciones": ["🔑 FIFA OTP", "🔑 UEFA OTP"]
-  },
-  "otro@ejemplo.com": {
-    "opciones": ["📋 Mundial Comprobantes"]
-  }
-}
+// email: "usuario@ejemplo.com"
+// opciones: ["🔑 FIFA OTP", "🔑 UEFA OTP"]
 ```
 
 ### Opciones Disponibles
@@ -255,7 +257,8 @@ Herramienta para gestionar la tabla `icloud_accounts` en Supabase PostgreSQL. Pe
 
 ### Funcionalidades
 - **Buscar:** Por cualquier campo (ALIAS, MAIL_MADRE, PASSWORD, PAQUETE, id) con búsqueda parcial (ILIKE) o exacta
-- **Editar:** Seleccionar fila y modificar campos editables (MAIL_MADRE, ALIAS, PASSWORD, PAQUETE)
+- **Editar fila:** Seleccionar fila y modificar campos editables (MAIL_MADRE, ALIAS, PASSWORD, PAQUETE)
+- **Edición masiva:** Actualizar un campo en todas las filas que coincidan con un criterio (ej: cambiar PASSWORD de todas las filas con un mismo MAIL_MADRE)
 - **Insertar:** Agregar nuevas filas con formulario
 - **Eliminar:** Con confirmación antes de borrar
 - **Limite configurable:** Por defecto 500 filas, ajustable hasta 10.000
@@ -336,7 +339,12 @@ docker-compose up -d
 
 ## Historial de Cambios
 
-### v3.5 (Última actualización - Febrero 2026)
+### v3.6 (Última actualización - Febrero 2026)
+- ✅ **Permisos persistentes en Supabase:** Los permisos de usuarios se guardan en la tabla `app_permisos` en lugar de un archivo JSON local, sobreviven a cualquier rebuild de Docker
+- ✅ Agregado **Edición masiva** en Control BD: actualizar un campo en todas las filas que coincidan con un criterio (ej: cambiar PASSWORD de un MAIL_MADRE)
+- ✅ Vista previa de filas afectadas y confirmación antes de ejecutar cambios masivos
+
+### v3.5
 - ✅ Agregado módulo **Control BD** (`modules/controlbd_page.py`)
 - ✅ Gestión completa de tabla `icloud_accounts` en Supabase
 - ✅ Buscar, editar, insertar y eliminar registros desde la interfaz
