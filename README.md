@@ -339,7 +339,10 @@ docker-compose up -d
 
 ## Historial de Cambios
 
-### v3.6 (Última actualización - Febrero 2026)
+### v3.6.1 (Última actualización - Febrero 2026)
+- ✅ Corregido error en botón **Limpiar** de Control BD (`StreamlitAPIException: session_state cannot be modified after widget is instantiated`)
+
+### v3.6
 - ✅ **Permisos persistentes en Supabase:** Los permisos de usuarios se guardan en la tabla `app_permisos` en lugar de un archivo JSON local, sobreviven a cualquier rebuild de Docker
 - ✅ Agregado **Edición masiva** en Control BD: actualizar un campo en todas las filas que coincidan con un criterio (ej: cambiar PASSWORD de un MAIL_MADRE)
 - ✅ Vista previa de filas afectadas y confirmación antes de ejecutar cambios masivos
