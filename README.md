@@ -6,13 +6,14 @@ Aplicación web Streamlit para consulta de códigos OTP y verificación de compr
 
 ## Descripción
 
-Esta aplicación proporciona seis herramientas principales:
+Esta aplicación proporciona siete herramientas principales:
 1. **FIFA OTP** - Consulta de códigos OTP de FIFA desde correos de iCloud
 2. **UEFA OTP** - Consulta de códigos OTP de UEFA desde correos de iCloud
 3. **Mundial Comprobantes** - Verificación de comprobantes de tickets del Mundial FIFA 2026
 4. **Comprobantes Anytickets** - Subir comprobantes de transferencia a Anytickets
 5. **Lectura Correos** - Lectura y filtrado de correos IMAP
 6. **Control BD** - Gestión de la tabla icloud_accounts en Supabase (buscar, editar, insertar, eliminar)
+7. **Extracción Facturas** - Extracción de datos de facturas PDF con detección de moneda y anomalías
 
 ## Despliegue en Producción (EasyPanel)
 
@@ -70,7 +71,8 @@ fifa_tools/
 │   ├── anytickets_page.py      # Módulo Comprobantes Anytickets
 │   ├── anytickets_client.py    # Cliente API Anytickets
 │   ├── lectura_correos_page.py # Módulo Lectura Correos
-│   └── controlbd_page.py       # Módulo Control BD icloud_accounts
+│   ├── controlbd_page.py       # Módulo Control BD icloud_accounts
+│   └── extraccion_factura_page.py # Módulo Extracción Facturas PDF
 │
 ├── docker/
 │   ├── Dockerfile              # Imagen Docker (python:3.11-slim)
@@ -167,6 +169,7 @@ Ejemplo de datos:
 - `📤 Comprobantes Anytickets` - Subir comprobantes a Anytickets
 - `📧 Lectura Correos` - Lectura de correos IMAP
 - `🗄️ Control BD` - Gestión de icloud_accounts en Supabase
+- `📄 Extracción Facturas` - Extracción de datos de facturas PDF
 
 ---
 
@@ -272,6 +275,49 @@ Formato: `postgresql://user:password@db.xxx.supabase.co:5432/postgres?sslmode=re
 
 ---
 
+## Extracción Facturas PDF
+
+### Descripción
+Herramienta para extraer datos de facturas PDF del Mundial FIFA 2026. Combina detección de moneda ISO 4217 (3 niveles de fallback) con detección de anomalías y erratas.
+
+### Funcionalidades
+- **Subida múltiple:** Subir uno o varios PDFs desde la interfaz
+- **Detección de moneda:** 14 monedas ISO 4217 con 3 niveles de fallback (texto explícito, encabezados GROSS, patrones de monto)
+- **Detección de anomalías:** Variables sin expandir, erratas comunes, validación de MATCH, validación de montos (qty x price = net, net + tax = total)
+- **Exportar CSV:** 15 columnas (fecha, email, factura, entidad, moneda en precio_unitario, items, etc.)
+- **Reporte de anomalías:** Descargable en TXT con resumen por tipo
+- **Soporte multiidioma:** ES, EN, HI
+
+### Campos CSV Extraídos
+| Campo | Descripción |
+|-------|-------------|
+| `fecha_archivo` | Fecha del nombre del archivo |
+| `email_orden` | Email extraído del nombre |
+| `numero_factura` | FU-XXXX-XX o FM-XXXX-XX |
+| `entidad_vendedora` | FWC2026 Mexico/US/Canada |
+| `fecha_factura` | Invoice Date |
+| `referencia_cliente` | Our Customer Reference |
+| `referencia_orden` | Our Order Reference |
+| `descripcion` | Descripción del item (MATCH) |
+| `tax_rate` | Tasa de impuesto normalizada |
+| `categoria` | Categoría del ticket |
+| `cantidad` | Cantidad |
+| `precio_unitario` | Precio unitario + moneda (ej: "150.00 USD") |
+| `neto` | Monto neto |
+| `impuesto` | Impuesto |
+| `total` | Total |
+
+### Tipos de Anomalías Detectadas
+- `ERRATA_VARIABLE` - Variables sin expandir ($var, ${var}, %var%, {{var}})
+- `ERRATA_PATRON` - Palabras duplicadas, valores null, errores Excel
+- `MATCH_INVALIDO` - Variables sin expandir en descripción de MATCH
+- `MATCH_INCOMPLETO` - MATCH sin número ordinal
+- `CALCULO_INCORRECTO` - qty x price != net
+- `TOTAL_INCORRECTO` - net + tax != total
+- `MONTO_SOSPECHOSO` - Precio unitario > 10,000
+
+---
+
 ## Instalación Local
 
 ### Opción 1: Python directo
@@ -334,12 +380,23 @@ docker-compose up -d
 | openpyxl | Exportar Excel |
 | Pillow | Procesamiento de imágenes |
 | psycopg2-binary | Conexión PostgreSQL (Control BD) |
+| pdfplumber | Extracción de tablas PDF (Extracción Facturas) |
 
 ---
 
 ## Historial de Cambios
 
-### v3.6.1 (Última actualización - Febrero 2026)
+### v4.0 (Última actualización - Febrero 2026)
+- ✅ Agregado módulo **Extracción Facturas** (`modules/extraccion_factura_page.py`)
+- ✅ Extracción de datos de facturas PDF con detección de moneda ISO 4217 (14 monedas, 3 niveles de fallback)
+- ✅ Detección de anomalías integrada (variables sin expandir, erratas, validación de montos)
+- ✅ Subida múltiple de PDFs con barra de progreso
+- ✅ Exportar CSV (15 columnas) y reporte de anomalías TXT
+- ✅ Soporte multiidioma (ES, EN, HI)
+- ✅ Integrado en sistema de permisos
+- ✅ Añadida dependencia `pdfplumber`
+
+### v3.6.1
 - ✅ Corregido error en botón **Limpiar** de Control BD (`StreamlitAPIException: session_state cannot be modified after widget is instantiated`)
 
 ### v3.6

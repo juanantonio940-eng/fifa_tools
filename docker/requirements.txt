@@ -25,3 +25,6 @@ Pillow>=10.0.0
 
 # PostgreSQL (Control BD icloud_accounts)
 psycopg2-binary>=2.9.0
+
+# PDF extraction (Extracción Facturas)
+pdfplumber>=0.10.0

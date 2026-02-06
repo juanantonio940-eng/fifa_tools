@@ -7,3 +7,4 @@ easyocr
 openpyxl
 Pillow
 psycopg2-binary
+pdfplumber
