@@ -22,6 +22,7 @@ import time
 import io
 import os
 import zipfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, date, timedelta
 from io import BytesIO
 from typing import Dict, List, Optional, Tuple
@@ -1088,11 +1089,14 @@ def render_accounts_tab():
     )
 
     if uploaded_file is not None:
-        if st.button(f"📥 {t('btn_load_accounts')} (CSV)", key="load_csv_btn"):
+        # Cargar automaticamente al subir (usar hash para no recargar si es el mismo archivo)
+        file_hash = hash(uploaded_file.getvalue())
+        if st.session_state.get("_lectura_csv_hash") != file_hash:
             content = uploaded_file.getvalue().decode("utf-8", errors="replace")
             accounts = _parse_accounts_text(content)
             if accounts:
                 st.session_state.lectura_accounts = accounts
+                st.session_state._lectura_csv_hash = file_hash
                 _log(f"Cuentas cargadas desde CSV: {len(accounts)}")
                 st.success(f"✅ {len(accounts)} {t('accounts_loaded')}")
                 st.rerun()
@@ -1200,25 +1204,49 @@ def _parse_accounts_text(text: str) -> List[Tuple[str, str]]:
 
 
 def _connect_accounts(imap_manager, accounts, selected_emails):
-    """Conecta las cuentas seleccionadas con barra de progreso"""
+    """Conecta las cuentas seleccionadas en PARALELO con ThreadPoolExecutor"""
     to_connect = [(e, p) for e, p in accounts if e in selected_emails]
     if not to_connect:
         return
 
+    total = len(to_connect)
+    MAX_WORKERS = min(10, total)
+
     progress = st.progress(0)
     status_container = st.empty()
+    status_container.info(f"🔄 Conectando {total} cuentas en paralelo (max {MAX_WORKERS} simultaneas)...")
+
     connected = 0
     failed = 0
+    completed = 0
 
-    for i, (email_addr, password) in enumerate(to_connect):
-        status_container.info(f"🔄 {t('connecting')} {email_addr}...")
-        ok, msg = imap_manager.connect(email_addr, password)
-        if ok:
-            connected += 1
-        else:
-            failed += 1
-        _log(msg)
-        progress.progress((i + 1) / len(to_connect))
+    def connect_single(email_addr, password):
+        return imap_manager.connect(email_addr, password)
+
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = {
+            executor.submit(connect_single, addr, pwd): addr
+            for addr, pwd in to_connect
+        }
+
+        for future in as_completed(futures):
+            addr = futures[future]
+            try:
+                ok, msg = future.result()
+                if ok:
+                    connected += 1
+                else:
+                    failed += 1
+                _log(msg)
+            except Exception as e:
+                failed += 1
+                _log(f"Error conectando {addr}: {e}")
+
+            completed += 1
+            progress.progress(completed / total)
+            status_container.info(
+                f"🔄 Conectadas: {connected} | Fallidas: {failed} | {completed}/{total}"
+            )
 
     status_container.empty()
     progress.empty()
@@ -1227,7 +1255,7 @@ def _connect_accounts(imap_manager, accounts, selected_emails):
         st.success(f"✅ {connected} {t('accounts_connected')}")
     if failed > 0:
         st.warning(f"⚠️ {failed} fallidas")
-    _log(f"Conexion completada: {connected} OK, {failed} fallidas de {len(to_connect)}")
+    _log(f"Conexion paralela completada: {connected} OK, {failed} fallidas de {total}")
     st.rerun()
 
 
