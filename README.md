@@ -11,7 +11,7 @@ Esta aplicación proporciona siete herramientas principales:
 2. **UEFA OTP** - Consulta de códigos OTP de UEFA desde correos de iCloud
 3. **Mundial Comprobantes** - Verificación de comprobantes de tickets del Mundial FIFA 2026
 4. **Comprobantes Anytickets** - Subir comprobantes de transferencia a Anytickets
-5. **Lectura Correos** - Lectura y filtrado de correos IMAP
+5. **Lectura Correos** - Lectura avanzada de correos IMAP con carga de cuentas CSV, selección de cuentas, búsqueda robusta v4, extracción FIFA detallada y descarga de adjuntos
 6. **Control BD** - Gestión de la tabla icloud_accounts en Supabase (buscar, editar, insertar, eliminar)
 7. **Extracción Facturas** - Extracción de datos de facturas PDF con detección de moneda y anomalías
 
@@ -243,6 +243,51 @@ Obtener en: https://console.anthropic.com/
 
 ---
 
+## Lectura Correos (v4)
+
+### Descripción
+Herramienta avanzada para lectura de correos IMAP desde múltiples cuentas con búsqueda robusta, extracción de datos FIFA World Cup 2026 y descarga de adjuntos.
+
+### Funcionalidades
+- **Carga de cuentas CSV:** Subir archivo CSV o pegar cuentas manualmente (email,password)
+- **Selección de cuentas:** Multiselect para elegir qué cuentas conectar
+- **Conexión con progreso:** Barra de progreso durante la conexión
+- **Reconexión automática:** Si se pierde la conexión, reconecta automáticamente
+- **Búsqueda robusta v4:** Envía solo 1 keyword al servidor IMAP por campo y filtra localmente (compatible con iCloud, Gmail, Outlook)
+- **Filtros avanzados:** Asunto, remitente, destinatario, contenido (local), fecha, estado de lectura, carpeta IMAP, límite
+- **Tabla de resultados:** DataFrame con cuenta, de, para, asunto, fecha, estado
+- **Detalle de correos:** Expandir para ver contenido completo, adjuntos y botón de marcar como leído
+- **Descarga de adjuntos:** Botón de descarga individual por adjunto
+- **Marcar como leído:** Individual o masivo con progreso
+- **Exportar CSV:** Todos los resultados a CSV
+- **Extracción FIFA avanzada:** Partido (Match info), tipo (Conditional/Confirmed), categoría (Supporter Tier/Category), cantidad, precio USD, titular, equipo, solicitante
+- **Exportar FIFA:** Excel y CSV con 11 columnas detalladas
+- **Log de actividad:** Registro de todas las operaciones con descarga
+
+### Pestañas
+1. **Cuentas** - Subir CSV, pegar cuentas, seleccionar y conectar
+2. **Búsqueda** - Filtros avanzados y botones de búsqueda rápida
+3. **Resultados** - Tabla resumen + detalles expandibles + adjuntos
+4. **FIFA** - Extracción de datos FIFA con filtros y exportación
+5. **Logs** - Log de actividad con limpiar y descargar
+
+### Columnas FIFA Extraídas
+| Campo | Descripción |
+|-------|-------------|
+| Email Madre | Cuenta de conexión IMAP |
+| Cuenta FIFA | Email destinatario (To) |
+| Solicitante | Nombre extraído del email |
+| Equipo | Equipo solicitado (My Team) |
+| Fecha Email | Fecha del correo |
+| Partido | Ronda + equipos (Semi-final, Match XX, etc.) |
+| Tipo Ticket | Conditional / Confirmed |
+| Categoría | Supporter Tier / Category N |
+| Titular | Nombre del titular del ticket |
+| Cantidad | Número de tickets |
+| Precio USD | Precio en dólares |
+
+---
+
 ## Control BD (icloud_accounts)
 
 ### Descripción
@@ -386,7 +431,21 @@ docker-compose up -d
 
 ## Historial de Cambios
 
-### v4.0 (Última actualización - Febrero 2026)
+### v4.1 (Última actualización - Febrero 2026)
+- ✅ **Reescrito módulo Lectura Correos** (`modules/lectura_correos_page.py`) basado en Lectura_grafico_webhookv4.py
+- ✅ Carga de cuentas via CSV (upload) o texto manual con selección de cuentas (multiselect)
+- ✅ Búsqueda IMAP robusta v4: 1 keyword por campo al servidor + filtro local post-fetch
+- ✅ `imap_search_safe()` con fallback UTF-8/None charset
+- ✅ Reconexión automática ante pérdida de conexión (socket, EOF, broken)
+- ✅ Filtros avanzados: asunto, remitente, destinatario, contenido (local), fecha, estado, carpeta, límite hasta 500
+- ✅ Extracción FIFA avanzada: partido, tipo (Conditional/Confirmed), categoría (Supporter Tier), cantidad, precio USD, titular, equipo
+- ✅ Descarga de adjuntos directa desde la interfaz
+- ✅ Marcar como leído masivo con progreso
+- ✅ Exportar resultados a CSV y FIFA a Excel/CSV
+- ✅ 5 pestañas: Cuentas, Búsqueda, Resultados, FIFA, Logs
+- ✅ Tab de logs con registro de actividad descargable
+
+### v4.0
 - ✅ Agregado módulo **Extracción Facturas** (`modules/extraccion_factura_page.py`)
 - ✅ Extracción de datos de facturas PDF con detección de moneda ISO 4217 (14 monedas, 3 niveles de fallback)
 - ✅ Detección de anomalías integrada (variables sin expandir, erratas, validación de montos)
