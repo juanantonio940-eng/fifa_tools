@@ -1346,17 +1346,39 @@ def render_search_tab():
         }
 
         all_results = []
+        total = len(connected_accounts)
+        MAX_SEARCH_WORKERS = min(10, total)
         progress = st.progress(0)
         status_container = st.empty()
+        status_container.info(f"🔄 Buscando en paralelo en {total} cuentas...")
 
-        for i, email_addr in enumerate(connected_accounts):
-            status_container.info(f"🔄 {t('search_account')} {email_addr}...")
-            results = imap_manager.search(
-                email_addr, criteria, folder=folder or "INBOX",
+        completed = 0
+
+        def search_single(addr):
+            return imap_manager.search(
+                addr, criteria, folder=folder or "INBOX",
                 log_fn=_log
             )
-            all_results.extend(results)
-            progress.progress((i + 1) / len(connected_accounts))
+
+        with ThreadPoolExecutor(max_workers=MAX_SEARCH_WORKERS) as executor:
+            futures = {
+                executor.submit(search_single, addr): addr
+                for addr in connected_accounts
+            }
+
+            for future in as_completed(futures):
+                addr = futures[future]
+                try:
+                    items = future.result()
+                    all_results.extend(items)
+                except Exception as e:
+                    _log(f"Error buscando en {addr}: {e}")
+
+                completed += 1
+                progress.progress(completed / total)
+                status_container.info(
+                    f"🔄 Buscando... {completed}/{total} cuentas | {len(all_results)} correos"
+                )
 
         status_container.empty()
         progress.empty()
